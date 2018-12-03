@@ -7,6 +7,11 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
+import random
+import optparse
+import logging
+
+
 def load_planar_dataset(seed, m=400):
     """
     Generates a dataset of points in the 2d space.
@@ -43,9 +48,9 @@ def load_planar_dataset(seed, m=400):
 
 def plot(X,Y):
     colors = {0 : [[],[]],
-              1 : [[],[]]}
-    alias = {0 : 'r', 1 : 'b'}
-
+              1 : [[],[]],
+              2 : [[],[]]}
+    alias = {0 : 'r', 1 : 'b', 2 : 'g'}
 
     for i in range(len(X)):
         color_index = Y[i][0]
@@ -60,7 +65,7 @@ def plot(X,Y):
     plt.show()
 
 
-def write_dataset(X, Y, out_dir, dataset_prefix):
+def write_dataset(X, out_dir, dataset_prefix):
     """ Write the dataset in the dataset_file as output.
 
     Follow the csv format of mlpack
@@ -70,21 +75,15 @@ def write_dataset(X, Y, out_dir, dataset_prefix):
     # - each row is a sample, each column a dimension
     data_file = os.path.join(out_dir, dataset_prefix + ".csv")
     # tab separated value for labels
-    label_file = os.path.join(out_dir, dataset_prefix + "_label.tsv")
-
-    print len(X)
-
-    assert(len(X) == len(Y))
+    label_file = os.path.join(out_dir, dataset_prefix + "_label.csv")
 
     with open(data_file, 'w') as data_out:
-        with open(label_file, 'w') as label_out:
-            for i in range(len(X)):
-                assert len(X[i]) == 2
-                x,y = X[i]
+        data_out.write("label,xcord,ycord\n")
 
-                data_out.write("%f %f\n" % (x,y))
-                label_out.write("%f " % Y[i])
-            label_out.close()
+        for i in range(len(X)):
+            # csv, comma separated
+            d = X[i]
+            data_out.write("%d,%f,%f\n" % (d[0],d[1],d[2]))
         data_out.close()
 
 def create_datasets():
@@ -92,10 +91,72 @@ def create_datasets():
 
     X,Y = load_planar_dataset(1, n)
 
-    # plot(X, Y)
+    assert(len(X) == len(Y))
 
-    write_dataset(X[:400], Y[:400], ".", "training")
-    write_dataset(X[400:], Y[400:], ".", "validation")
+    data = []
+    for i in range(len(X)):
+        x,y = X[i]
+        data.append([int(Y[i]),x,y])
 
-create_datasets();
+    data = random.sample( data, len(data) )
+
+    write_dataset(data[:400], ".", "training")
+    write_dataset(data[400:], ".", "test")
+
+
+def main(input_args=None):
+    p = optparse.OptionParser()
+
+    p.add_option('-m', '--mode', type='choice',
+                 choices= ["gen","plotinput","plotres"],default="gen")
+
+    p.add_option('-d', '--dataset',
+                 help="File containing the dataset")
+
+    if (input_args is None):
+        input_args = sys.argv[1:]
+    opts, args = p.parse_args(input_args)
+
+    if (opts.mode == "gen"):
+        create_datasets();
+    elif (opts.mode == "plotinput" or opts.mode == "plotres"):
+        if (not opts.dataset):
+            sys.exit(1)
+
+
+        is_res = opts.mode == "plotres"
+        with open(opts.dataset,"r") as f:
+            X_py = []
+            Y_py = []
+            W_py = []
+            first = True
+            for line in f.readlines():
+                if first:
+                    first = False
+                else:
+                    line = line.strip()
+                    data = line.split(",")
+                    label = int(data[0])
+                    x = data[1]
+                    y = data[2]
+                    
+                    if (is_res):
+                        real_label = int(data[3])
+                        X_py.append([x,y])
+
+                        if (real_label != label):
+                            Y_py.append([2])
+                        else:
+                            Y_py.append([label])
+                    else:
+                        X_py.append([x,y])
+                        Y_py.append([label])
+
+            plot(np.array(X_py), np.array(Y_py))
+
+            f.close()
+
+
+if __name__ == '__main__':
+    main()
 

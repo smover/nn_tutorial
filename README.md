@@ -23,6 +23,3 @@ Set up a feed forward network with one hidden layer, train it, and run it for cl
 
 
 
-
-# Recurrent Neural Network --- dinosour
-
