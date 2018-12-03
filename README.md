@@ -1,4 +1,4 @@
-# Feed Forward Neural Network --- classify points in a dot
+# Feed Forward Neural Network --- classify points
 
 Exercise from: https://github.com/Kulbear/deep-learning-coursera (solution to the Coursera class on Neural Networks and Deep Learning)
 
